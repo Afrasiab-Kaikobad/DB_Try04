@@ -2,6 +2,7 @@ package com.example.db_try04
 
 import android.os.Bundle
 import android.view.LayoutInflater
+import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AlertDialog
@@ -72,7 +73,7 @@ class MainActivity : AppCompatActivity() {
         studentList = studentDao.getAllStudent() as MutableList<Student>
     }
     fun updateRecyclerView(){
-        studentRecyclerAdapter = StudentRecyclerViewAdapter(studentList)
+        studentRecyclerAdapter = StudentRecyclerViewAdapter(studentList,{updateDialog(it)})
         recyclerview.adapter = studentRecyclerAdapter
     }
 
@@ -96,5 +97,31 @@ class MainActivity : AppCompatActivity() {
         }
         build.setNegativeButton("Cancel",null)
         build.show()
+    }
+
+    fun updateDialog(student:Student){
+        val view = LayoutInflater.from(this).inflate(R.layout.update_student_view_item01,null)
+        val idTv = view.findViewById<TextView>(R.id.change_id_tv)
+        idTv.text = student.id.toString()
+        val nameET = view.findViewById<TextInputEditText>(R.id.change_name_et)
+        nameET.setText(student.name)
+        val alertDialog = AlertDialog.Builder(this)
+        alertDialog.setView(view)
+        alertDialog.setPositiveButton("Update",{
+            dialog, which ->
+
+            CoroutineScope(Dispatchers.Main).launch{
+                val updatedStudent = Student(idTv.text.toString().toInt(),nameET.text.toString())
+                withContext(Dispatchers.IO, {
+                    studentDao.Update(updatedStudent)
+                    updateStudentListFromDB()
+                })
+
+                updateRecyclerView()
+            }
+        })
+        alertDialog.setNegativeButton("Cancel",null)
+        alertDialog.setTitle("Update Student")
+        alertDialog.show()
     }
 }

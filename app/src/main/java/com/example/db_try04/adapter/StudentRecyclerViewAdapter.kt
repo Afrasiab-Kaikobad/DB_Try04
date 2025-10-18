@@ -9,7 +9,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.db_try04.R
 import com.example.db_try04.data.entity.Student
 
-class StudentRecyclerViewAdapter(val studentList: MutableList<Student>):
+class StudentRecyclerViewAdapter(val studentList: MutableList<Student>, val onUpdate:(Student)-> Unit):
     RecyclerView.Adapter<StudentRecyclerViewAdapter.StudentViewHolder>()
 {
     override fun onCreateViewHolder(
@@ -32,6 +32,9 @@ class StudentRecyclerViewAdapter(val studentList: MutableList<Student>):
     {
         view.id_textview.text = student.id.toString()
         view.name_textview.text = student.name
+        view.update_btn.setOnClickListener {
+            onUpdate(student)
+        }
     }
 
     override fun getItemCount(): Int = studentList.size
