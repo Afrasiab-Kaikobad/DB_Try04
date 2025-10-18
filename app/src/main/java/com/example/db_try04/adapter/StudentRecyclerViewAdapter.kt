@@ -1,5 +1,6 @@
 package com.example.db_try04.adapter
 
+import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
@@ -15,14 +16,22 @@ class StudentRecyclerViewAdapter(val studentList: MutableList<Student>):
         parent: ViewGroup,
         viewType: Int
     ): StudentViewHolder {
-        TODO("Not yet implemented")
+       return StudentViewHolder(LayoutInflater
+           .from(parent.context)
+           .inflate(R.layout.recyclerview_item_layout_01,parent,false))
     }
 
     override fun onBindViewHolder(
         holder: StudentViewHolder,
         position: Int
     ) {
-        TODO("Not yet implemented")
+        val student = studentList[position]
+        onBind(holder,student)
+    }
+    private fun onBind(view: StudentViewHolder, student:Student)
+    {
+        view.id_textview.text = student.id.toString()
+        view.name_textview.text = student.name
     }
 
     override fun getItemCount(): Int = studentList.size

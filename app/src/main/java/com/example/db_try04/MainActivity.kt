@@ -7,6 +7,9 @@ import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+import com.example.db_try04.adapter.StudentRecyclerViewAdapter
 import com.example.db_try04.data.InstitueDB
 import com.example.db_try04.data.dao.StudentDao
 import com.example.db_try04.data.entity.Student
@@ -15,31 +18,65 @@ import com.google.android.material.textfield.TextInputEditText
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class MainActivity : AppCompatActivity() {
 
-    lateinit var db: InstitueDB
+    lateinit var studentList: MutableList<Student>
+    lateinit var studentDao: StudentDao
     lateinit var addBtn : FloatingActionButton
+    lateinit var recyclerview: RecyclerView
+    lateinit var studentRecyclerAdapter: StudentRecyclerViewAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContentView(R.layout.activity_main)
 
-        db = InstitueDB.getDatabase(this)
-        val studentDao = db.getStudentDao()
+        studentList = mutableListOf()
+
+        /****************************************************
+         * Initialize the UI components
+         ****************************************************/
 
         addBtn = findViewById<FloatingActionButton>(R.id.add_btn)
-        addBtn.setOnClickListener {
-//            Toast.makeText(this,"Add button clicked",Toast.LENGTH_SHORT).show()
-            addDialog(studentDao)
-//            CoroutineScope(Dispatchers.IO).launch{
-//                studentDao.Update(Student(id=2, name = "Ahmed"))
-//            }
+        recyclerview = findViewById<RecyclerView>(R.id.recycleview)
+        recyclerview.layoutManager = LinearLayoutManager(this)
+        CoroutineScope(Dispatchers.Main).launch {
+            withContext(Dispatchers.IO,{setDataBase()})
+            withContext(Dispatchers.IO,{updateStudentListFromDB()})
+            updateRecyclerView()
+        }
 
+
+        /****************************************************
+         * Event on UI components
+         ****************************************************/
+
+        addBtn.setOnClickListener {
+            addDialog()
         }
     }
-    fun addDialog(insertTool: StudentDao){
+
+    fun setDataBase(){
+        val db = InstitueDB.getDatabase(applicationContext)
+        studentDao = db.getStudentDao()
+    }
+    suspend fun addStudentinDb(student: Student){
+        studentDao.Insert(student)
+    }
+
+    suspend fun updateStudentListFromDB()
+    {
+        studentList.clear()
+        studentList = studentDao.getAllStudent() as MutableList<Student>
+    }
+    fun updateRecyclerView(){
+        studentRecyclerAdapter = StudentRecyclerViewAdapter(studentList)
+        recyclerview.adapter = studentRecyclerAdapter
+    }
+
+    fun addDialog(){
         val build = AlertDialog.Builder(this)
         build.setIcon(R.drawable.pencil_tool_svgrepo_com)
         val view = LayoutInflater.from(this).inflate(R.layout.add_person_view_layout,null)
@@ -47,11 +84,15 @@ class MainActivity : AppCompatActivity() {
 
         build.setPositiveButton("Add"){
             dialog, which ->
-
-            lifecycleScope.launch {
-                val name = view.findViewById<TextInputEditText>(R.id.name_ET)
-                insertTool.Insert(Student(name = name.text.toString()))
+            CoroutineScope(Dispatchers.Main).launch {
+                val student = Student(name = view.findViewById<TextInputEditText>(R.id.name_ET).text.toString())
+                withContext(Dispatchers.IO,{
+                    addStudentinDb(student)
+                    updateStudentListFromDB()
+                })
+                updateRecyclerView()
             }
+
         }
         build.setNegativeButton("Cancel",null)
         build.show()
